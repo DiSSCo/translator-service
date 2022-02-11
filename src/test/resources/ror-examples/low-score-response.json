@@ -1,0 +1,93 @@
+{
+  "number_of_results": 1,
+  "items": [
+    {
+      "substring": "Naturalis Biodiversity Center",
+      "score": 0.79,
+      "matching_type": "COMMON TERMS",
+      "chosen": false,
+      "organization": {
+        "id": "https://ror.org/00g3bkn86",
+        "name": "Sarawak Biodiversity Centre",
+        "email_address": null,
+        "ip_addresses": [],
+        "established": 1997,
+        "types": [
+          "Other"
+        ],
+        "relationships": [],
+        "addresses": [
+          {
+            "lat": 1.392541,
+            "lng": 110.32284,
+            "state": null,
+            "state_code": null,
+            "city": "Kuching",
+            "geonames_city": {
+              "id": 1735634,
+              "city": "Kuching",
+              "geonames_admin1": {
+                "name": "Sarawak",
+                "id": 1733038,
+                "ascii_name": "Sarawak",
+                "code": "MY.11"
+              },
+              "geonames_admin2": {
+                "name": null,
+                "id": null,
+                "ascii_name": null,
+                "code": null
+              },
+              "license": {
+                "attribution": "Data from geonames.org under a CC-BY 3.0 license",
+                "license": "http://creativecommons.org/licenses/by/3.0/"
+              },
+              "nuts_level1": {
+                "name": null,
+                "code": null
+              },
+              "nuts_level2": {
+                "name": null,
+                "code": null
+              },
+              "nuts_level3": {
+                "name": null,
+                "code": null
+              }
+            },
+            "postcode": null,
+            "primary": false,
+            "line": null,
+            "country_geonames_id": 1733045
+          }
+        ],
+        "links": [
+          "https://www.sbc.org.my/"
+        ],
+        "aliases": [],
+        "acronyms": [
+          "SBC"
+        ],
+        "status": "active",
+        "wikipedia_url": "https://en.wikipedia.org/wiki/Sarawak_Biodiversity_Centre",
+        "labels": [],
+        "country": {
+          "country_name": "Malaysia",
+          "country_code": "MY"
+        },
+        "external_ids": {
+          "Wikidata": {
+            "preferred": null,
+            "all": [
+              "Q7423417"
+            ]
+          },
+          "GRID": {
+            "preferred": "grid.502163.3",
+            "all": "grid.502163.3"
+          }
+        }
+      }
+    }
+  ]
+}

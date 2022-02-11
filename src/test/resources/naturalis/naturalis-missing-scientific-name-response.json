@@ -1,0 +1,47 @@
+{
+  "sourceSystem" : {
+    "code" : "BRAHMS",
+    "name" : "Naturalis - Botany catalogues"
+  },
+  "sourceSystemId" : "L.3892015",
+  "id" : "L.3892015@BRAHMS",
+  "unitID" : "L.3892015",
+  "unitGUID" : "https://data.biodiversitydata.nl/naturalis/specimen/L.3892015",
+  "collectorsFieldNumber" : "Excursie Spanje 1982  39 ",
+  "assemblageID" : "2914482@BRAHMS",
+  "sourceInstitutionID" : "Naturalis Biodiversity Center",
+  "sourceID" : "Brahms",
+  "owner" : "Naturalis Biodiversity Center",
+  "licenseType" : "Copyright",
+  "license" : "CC0 1.0",
+  "recordBasis" : "Herbarium sheet",
+  "collectionType" : "Botany",
+  "objectPublic" : true,
+  "gatheringEvent" : {
+    "worldRegion" : "Europe",
+    "continent" : "Europe",
+    "country" : "Spain",
+    "locality" : "Alicante, Benisa.",
+    "localityText" : "Europe; Spain; Alicante, Benisa.",
+    "gatheringPersons" : [ {
+      "fullName" : "Excursie Spanje 1982"
+    } ]
+  },
+  "identifications" : [ {
+    "taxonRank" : "species",
+    "defaultClassification" : {
+      "kingdom" : "Plantae",
+      "className" : "Magnoliopsidae",
+      "order" : "Fabales",
+      "family" : "Leguminosae-Pap.",
+      "genus" : "Argyrolobium",
+      "specificEpithet" : "zanonii"
+    },
+    "preferred" : false
+  } ],
+  "associatedMultiMediaUris" : [ {
+    "accessUri" : "https://medialib.naturalis.nl/file/id/L.3892015/format/large",
+    "format" : "image/jpeg",
+    "variant" : "ac:GoodQuality"
+  } ]
+}
