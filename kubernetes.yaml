@@ -11,9 +11,9 @@ spec:
           image: leeflangjs/naturalis-api-translator:latest
           env:
             - name: kafka.host
-              value: kafka-test-0.kafka-test-headless.default.svc.cluster.local:9092
+              value:
             - name: kafka.topic
-              value: naturalis
+              value: 
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
