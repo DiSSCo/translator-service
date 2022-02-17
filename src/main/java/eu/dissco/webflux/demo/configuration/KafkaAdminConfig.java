@@ -1,5 +1,6 @@
 package eu.dissco.webflux.demo.configuration;
 
+import eu.dissco.webflux.demo.properties.KafkaProperties;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -8,7 +9,6 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.KafkaAdmin;
-import eu.dissco.webflux.demo.properties.KafkaProperties;
 
 @Configuration
 @AllArgsConstructor
