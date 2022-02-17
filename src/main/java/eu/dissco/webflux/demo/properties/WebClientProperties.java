@@ -7,13 +7,16 @@ import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
-@ConfigurationProperties(prefix = "naturalis")
-public class NaturalisProperties {
+@ConfigurationProperties(prefix = "webclient")
+public class WebClientProperties {
 
   @NotBlank
-  private String url = "https://api.biodiversitydata.nl/v2/specimen";
+  private String endpoint;
 
-  @NotBlank
-  private String endpoint = "https://api.biodiversitydata.nl/v2/specimen/download";
+  private String queryParams;
+
+  private int itemsPerRequest = 1000;
+
+  private String contentNamespace;
 
 }

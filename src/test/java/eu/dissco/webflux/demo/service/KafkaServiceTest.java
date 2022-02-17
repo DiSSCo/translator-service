@@ -1,6 +1,7 @@
 package eu.dissco.webflux.demo.service;
 
 import static eu.dissco.webflux.demo.util.TestUtil.testAuthoritative;
+import static eu.dissco.webflux.demo.util.TestUtil.testOpenDSWrapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -57,7 +58,7 @@ class KafkaServiceTest {
     }).when(listenableFuture).addCallback(any(ListenableFutureCallback.class));
 
     // When
-    service.sendMessage(testAuthoritative());
+    service.sendMessage(testOpenDSWrapper());
 
     // Then
     then(kafkaTemplate).should().send(anyString(), anyString());

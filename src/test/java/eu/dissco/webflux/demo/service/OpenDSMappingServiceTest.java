@@ -1,8 +1,6 @@
 package eu.dissco.webflux.demo.service;
 
-import static eu.dissco.webflux.demo.util.TestUtil.ROR_INSTITUTION;
-import static eu.dissco.webflux.demo.util.TestUtil.testAuthoritative;
-import static eu.dissco.webflux.demo.util.TestUtil.testDarwin;
+import static eu.dissco.webflux.demo.util.TestUtil.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
@@ -35,7 +33,7 @@ class OpenDSMappingServiceTest {
     var result = service.mapToAuthoritative(testDarwin());
 
     // When
-    assertThat(result).isEqualTo(testAuthoritative());
+    assertThat(result).isEqualTo(testOpenDSWrapper());
   }
 
 }
