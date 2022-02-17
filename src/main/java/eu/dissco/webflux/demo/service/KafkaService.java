@@ -3,6 +3,7 @@ package eu.dissco.webflux.demo.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.webflux.demo.domain.Authoritative;
+import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -21,9 +22,9 @@ public class KafkaService {
   private final KafkaTemplate<String, String> kafkaTemplate;
   private final KafkaProperties properties;
 
-  public void sendMessage(Authoritative authoritative) {
+  public void sendMessage(OpenDSWrapper openDSWrapper) {
     try {
-      var json = mapper.writeValueAsString(authoritative);
+      var json = mapper.writeValueAsString(openDSWrapper);
       ListenableFuture<SendResult<String, String>> future = kafkaTemplate.send(
           properties.getTopic(), json);
       future.addCallback(new ListenableFutureCallback<>() {
@@ -42,7 +43,7 @@ public class KafkaService {
         }
       });
     } catch (JsonProcessingException e) {
-      log.error("Failed to pars Objects to Json: {}", authoritative);
+      log.error("Failed to pars Objects to Json: {}", openDSWrapper);
     }
   }
 }

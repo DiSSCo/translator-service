@@ -22,5 +22,5 @@ public class KafkaProperties {
   private short numberOfReplications = 1;
 
   @Positive
-  private int logAfterLines = 100;
+  private int logAfterLines = 1000;
 }

@@ -25,15 +25,16 @@ public class RorService {
     if (json.isPresent()) {
       var items = json.get().get("items");
       if (items.size() > 0) {
-        var score = items.get(0).get("score");
-        if (score.asDouble() >= 1.0) {
-          var rorId = items.get(0).get("organization").get("id");
-          log.info("ROR for {} is {}", institutionCode, rorId);
-          return rorId.asText();
+        for (var item : items) {
+          if (item.get("chosen").asBoolean()) {
+            var rorId = item.get("organization").get("id");
+            log.info("ROR for {} is {}", institutionCode, rorId);
+            return rorId.asText();
+          }
         }
       }
     }
-    log.warn("Could not match name to a ROR id for: {}", institutionCode);
+    log.warn("Could not match name to a ROR id for: {}", url);
     return "Unknown";
   }
 }

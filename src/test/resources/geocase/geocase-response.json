@@ -1,0 +1,29 @@
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 37,
+    "params": {
+      "q": "*",
+      "fl": "unitid,fullscientificname,recordbasis,datasetowner,recordURI,images",
+      "start": "40000",
+      "rows": "1"
+    }
+  },
+  "response": {
+    "numFound": 1661985,
+    "start": 40000,
+    "numFoundExact": true,
+    "docs": [
+      {
+        "images": [
+          "https://files.geocollections.info/medium/4d/59/4d59cfd2-1c22-408c-88e1-111b1364470d.jpg"
+        ],
+        "recordbasis": "Fossil",
+        "datasetowner": "University of Tartu, Natural History Museum",
+        "fullscientificname": "Algae (informal)",
+        "recordURI": "https://geocollections.info/specimen/289080",
+        "unitid": "638-222"
+      }
+    ]
+  }
+}

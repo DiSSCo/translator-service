@@ -1,32 +1,36 @@
-package eu.dissco.webflux.demo.service;
+package eu.dissco.webflux.demo.service.webclients;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import eu.dissco.webflux.demo.Profiles;
 import eu.dissco.webflux.demo.domain.DarwinCore;
 import eu.dissco.webflux.demo.domain.Image;
-import eu.dissco.webflux.demo.properties.NaturalisProperties;
+import eu.dissco.webflux.demo.properties.WebClientProperties;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 @Service
 @AllArgsConstructor
 @Slf4j
-public class WebFluxService {
+@Profile(Profiles.NATURALIS)
+public class NaturalisService implements WebClientInterface{
 
   private static final String IDENTIFICATIONS = "identifications";
   private static final String SCIENTIFIC_NAME = "scientificName";
   private static final String FULL_SCIENTIFIC_NAME = "fullScientificName";
   private static final String ASSOCIATED_MULTI_MEDIA_URIS = "associatedMultiMediaUris";
 
-  private final NaturalisProperties properties;
+  private final WebClientProperties properties;
 
   private final WebClient webClient;
 
-  public Stream<DarwinCore> getNaturalisStream() {
+  public Stream<DarwinCore> retrieveData() {
     var uriSpec = webClient.get().uri(properties.getEndpoint()).retrieve()
         .bodyToFlux(JsonNode.class);
     return uriSpec.toStream().map(this::parseJson)
@@ -71,5 +75,5 @@ public class WebFluxService {
     }
     return images;
   }
-
+  
 }
