@@ -16,7 +16,7 @@ jobs:
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots verify
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag demo-naturalis-api:0.0.1
+        run: docker build . --file Dockerfile --tag translator-service:0.0.1
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
@@ -29,4 +29,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/naturalis-webflux-translator:latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/translator-service:latest
