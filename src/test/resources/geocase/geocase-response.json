@@ -10,8 +10,8 @@
     }
   },
   "response": {
-    "numFound": 1661985,
-    "start": 40000,
+    "numFound": 2,
+    "start": 0,
     "numFoundExact": true,
     "docs": [
       {

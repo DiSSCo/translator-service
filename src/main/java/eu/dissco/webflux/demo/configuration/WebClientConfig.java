@@ -11,7 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 @AllArgsConstructor
-public class WebfluxConfig {
+public class WebClientConfig {
 
   @Bean
   @Profile({Profiles.GEO_CASE, Profiles.NATURALIS})
@@ -31,7 +31,7 @@ public class WebfluxConfig {
   @Bean
   @Profile(Profiles.BIO_CASE)
   public XMLInputFactory xmlEventReader() {
-    var factory =  XMLInputFactory.newInstance();
+    var factory = XMLInputFactory.newInstance();
     factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
     return factory;
   }

@@ -1,5 +1,6 @@
 package eu.dissco.webflux.demo.configuration;
 
+import eu.dissco.webflux.demo.properties.KafkaProperties;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -10,7 +11,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
-import eu.dissco.webflux.demo.properties.KafkaProperties;
 
 @Configuration
 @AllArgsConstructor

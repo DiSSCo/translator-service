@@ -9,7 +9,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.webflux.demo.util.TestUtil;
 import java.io.IOException;
-import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,8 @@ class RorServiceTest {
   private ResponseSpec responseSpec;
   @Mock
   private Mono<JsonNode> jsonNodeMono;
+  @Mock
+  private CompletableFuture<JsonNode> jsonFuture;
   private RorService rorService;
 
   @BeforeEach
@@ -47,11 +50,11 @@ class RorServiceTest {
 
 
   @Test
-  void testGetRorId() throws IOException {
+  void testGetRorId() throws IOException, ExecutionException, InterruptedException {
     // Given
     givenWebclient();
-    given(jsonNodeMono.blockOptional(any())).willReturn(Optional.of(
-        mapper.readTree(TestUtil.loadResourceFile("ror-examples/naturalis-response.json"))));
+    given(jsonFuture.get()).willReturn(
+        mapper.readTree(TestUtil.loadResourceFile("ror-examples/naturalis-response.json")));
 
     // When
     var result = rorService.getRoRId(INSTITUTION_NAME);
@@ -65,16 +68,17 @@ class RorServiceTest {
     given(headersSpec.uri(anyString())).willReturn(uriSpec);
     given(uriSpec.retrieve()).willReturn(responseSpec);
     given(responseSpec.bodyToMono(any(Class.class))).willReturn(jsonNodeMono);
+    given(jsonNodeMono.toFuture()).willReturn(jsonFuture);
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"ror-examples/low-score-response.json",
       "ror-examples/empty-response.json"})
-  void testFailedRetrieval(String fileName) throws IOException {
+  void testFailedRetrieval(String fileName)
+      throws IOException, ExecutionException, InterruptedException {
     // Given
     givenWebclient();
-    given(jsonNodeMono.blockOptional(any())).willReturn(Optional.of(
-        mapper.readTree(TestUtil.loadResourceFile(fileName))));
+    given(jsonFuture.get()).willReturn(mapper.readTree(TestUtil.loadResourceFile(fileName)));
 
     // When
     var result = rorService.getRoRId(INSTITUTION_NAME);
@@ -84,10 +88,10 @@ class RorServiceTest {
   }
 
   @Test
-  void testEmptyMono() {
+  void testEmptyMono() throws ExecutionException, InterruptedException {
     // Given
     givenWebclient();
-    given(jsonNodeMono.blockOptional(any())).willReturn(Optional.empty());
+    given(jsonFuture.get()).willReturn(null);
 
     // When
     var result = rorService.getRoRId(INSTITUTION_NAME);

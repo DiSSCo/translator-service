@@ -15,7 +15,7 @@ public class WebClientProperties {
 
   private String queryParams;
 
-  private int itemsPerRequest = 1000;
+  private int itemsPerRequest = 500;
 
   private String contentNamespace;
 

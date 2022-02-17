@@ -1,8 +1,11 @@
 package eu.dissco.webflux.demo.service.webclients;
 
 import eu.dissco.webflux.demo.Profiles;
-import eu.dissco.webflux.demo.domain.DarwinCore;
+import eu.dissco.webflux.demo.domain.Authoritative;
+import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
+import eu.dissco.webflux.demo.service.KafkaService;
+import eu.dissco.webflux.demo.service.RorService;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
 import java.io.IOException;
@@ -11,7 +14,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.concurrent.ExecutionException;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
@@ -39,23 +42,30 @@ public class BioCaseService implements WebClientInterface {
   private final XMLInputFactory factory;
 
   private final Configuration configuration;
+  private final RorService rorService;
+  private final KafkaService kafkaService;
+
 
   @Override
-  public Stream<DarwinCore> retrieveData() {
-    var recordList = new ArrayList<DarwinCore>();
+  public void retrieveData() {
     var uri = properties.getEndpoint();
     var templateProperties = getTemplateProperties();
     configuration.setNumberFormat("computer");
     var finished = false;
     while (!finished) {
-      log.info("Currently at: {} still collecting...", recordList.size());
+      var recordList = new ArrayList<OpenDSWrapper>();
+      log.info("Currently at: {} still collecting...", templateProperties.get(START_AT));
       StringWriter writer = fillTemplate(templateProperties);
-      finished = webClient.get().uri(uri + properties.getQueryParams() + writer).retrieve()
-          .bodyToMono(String.class).map(xml -> mapToDarwin(xml, recordList)).block();
+      try {
+        finished = webClient.get().uri(uri + properties.getQueryParams() + writer).retrieve()
+            .bodyToMono(String.class).map(xml -> mapToDarwin(xml, recordList)).toFuture().get();
+      } catch (InterruptedException | ExecutionException e) {
+        log.error("Failed to get response from uri", e);
+        Thread.currentThread().interrupt();
+      }
       updateStartAtParameter(templateProperties);
+      recordList.forEach(kafkaService::sendMessage);
     }
-    log.info("Gathered: {} records from bioCase", recordList.size());
-    return recordList.stream();
   }
 
   private StringWriter fillTemplate(Map<String, Object> templateProperties) {
@@ -82,7 +92,7 @@ public class BioCaseService implements WebClientInterface {
     return map;
   }
 
-  private boolean mapToDarwin(String xml, ArrayList<DarwinCore> list) {
+  private boolean mapToDarwin(String xml, ArrayList<OpenDSWrapper> list) {
     var recordCount = 0;
     var organisation = "Unknown";
     try {
@@ -114,33 +124,36 @@ public class BioCaseService implements WebClientInterface {
     throw new XMLStreamException("Missing Organisation Text element");
   }
 
-  private void retrieveUnitData(ArrayList<DarwinCore> list, XMLEventReader xmlEventReader,
+  private void retrieveUnitData(ArrayList<OpenDSWrapper> list, XMLEventReader xmlEventReader,
       XMLEvent element, String organisation) {
     try {
       if (isStartElement(element, "Unit")) {
-        list.add(getUnitProperties(xmlEventReader, organisation));
+        list.add(
+            OpenDSWrapper.builder().authoritative(getUnitProperties(xmlEventReader, organisation))
+                .sourceId("translator-service").build());
       }
     } catch (XMLStreamException e) {
       log.error("Failed to process Unit xml to object", e);
     }
   }
 
-  private DarwinCore getUnitProperties(XMLEventReader xmlEventReader, String organisation)
+  private Authoritative getUnitProperties(XMLEventReader xmlEventReader, String organisation)
       throws XMLStreamException {
-    var darwinCore = DarwinCore.builder().institutionID(organisation);
+    var authoritative = Authoritative.builder().institution(rorService.getRoRId(organisation))
+        .institutionCode(organisation).midslevel(1);
     while (xmlEventReader.hasNext()) {
       var element = xmlEventReader.nextEvent();
       if (isStartElement(element, "UnitID")) {
-        darwinCore.id(getData(xmlEventReader));
+        authoritative.physicalSpecimenId(getData(xmlEventReader));
       }
       if (isStartElement(element, "FullScientificNameString")) {
-        darwinCore.scientificName(getData(xmlEventReader));
+        authoritative.name(getData(xmlEventReader));
       }
       if (isStartElement(element, "RecordBasis")) {
-        darwinCore.basisOfRecord(getData(xmlEventReader));
+        authoritative.materialType(getData(xmlEventReader));
       }
       if (isEndElement(element, "Unit")) {
-        return darwinCore.build();
+        return authoritative.build();
       }
     }
     throw new XMLStreamException("No data found in Unit XML");
