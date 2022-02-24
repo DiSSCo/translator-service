@@ -10,6 +10,7 @@ import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.DwcaProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
 import eu.dissco.webflux.demo.service.KafkaService;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
@@ -59,9 +61,9 @@ class DwcaServiceTest {
     // Given
     given(properties.getEndpoint()).willReturn("https://endpoint");
     given(dwcaProperties.getDownloadFile())
-        .willReturn(new ClassPathResource("src/test/resources/dwca/test/darwin.zip").getPath());
+        .willReturn(getAbsolutePath() + "/darwin.zip");
     given(dwcaProperties.getTempFolder())
-        .willReturn(new ClassPathResource("src/test/resources/dwca/test/temp").getPath());
+        .willReturn(getAbsolutePath() + "/temp");
     given(webClient.get()).willReturn(headersSpec);
     given(headersSpec.uri(anyString())).willReturn(uriSpec);
     given(uriSpec.retrieve()).willReturn(responseSpec);
@@ -97,6 +99,11 @@ class DwcaServiceTest {
     // Then
     then(kafkaService).shouldHaveNoInteractions();
     then(dwcaProperties).shouldHaveNoMoreInteractions();
+  }
+  private String getAbsolutePath(){
+    String path = "src/test/resources/dwca/test";
+    File file = new File(path);
+    return file.getAbsolutePath();
   }
 
 }
