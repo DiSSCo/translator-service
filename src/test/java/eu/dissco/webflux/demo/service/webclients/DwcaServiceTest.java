@@ -59,9 +59,9 @@ class DwcaServiceTest {
     // Given
     given(properties.getEndpoint()).willReturn("https://endpoint");
     given(dwcaProperties.getDownloadFile())
-        .willReturn("src/test/resources/dwca/test/darwin.zip");
+        .willReturn(new ClassPathResource("src/test/resources/dwca/test/darwin.zip").getPath());
     given(dwcaProperties.getTempFolder())
-        .willReturn("src/test/resources/dwca/test/temp");
+        .willReturn(new ClassPathResource("src/test/resources/dwca/test/temp").getPath());
     given(webClient.get()).willReturn(headersSpec);
     given(headersSpec.uri(anyString())).willReturn(uriSpec);
     given(uriSpec.retrieve()).willReturn(responseSpec);
