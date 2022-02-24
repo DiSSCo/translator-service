@@ -172,4 +172,5 @@ public class BioCaseService implements WebClientInterface {
     return element.isEndElement() && element.asEndElement().getName().getLocalPart()
         .equals(field);
   }
+
 }

@@ -8,18 +8,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ConfigurableApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectRunnerTest {
 
   @Mock
   private WebClientInterface webService;
+  @Mock
+  private ConfigurableApplicationContext context;
 
   private ProjectRunner runner;
 
   @BeforeEach
   void setup() {
-    this.runner = new ProjectRunner(webService);
+    this.runner = new ProjectRunner(webService, context);
   }
 
   @Test
@@ -31,6 +34,7 @@ class ProjectRunnerTest {
 
     // Then
     then(webService).should().retrieveData();
+    then(context).should().close();
   }
 
 }
