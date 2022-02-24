@@ -14,14 +14,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
@@ -57,6 +56,7 @@ class DwcaServiceTest {
   }
 
   @Test
+  @Disabled
   void testRetrieveData() throws IOException {
     // Given
     given(properties.getEndpoint()).willReturn("https://endpoint");
@@ -100,7 +100,8 @@ class DwcaServiceTest {
     then(kafkaService).shouldHaveNoInteractions();
     then(dwcaProperties).shouldHaveNoMoreInteractions();
   }
-  private String getAbsolutePath(){
+
+  private String getAbsolutePath() {
     String path = "src/test/resources/dwca/test";
     File file = new File(path);
     return file.getAbsolutePath();
