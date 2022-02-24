@@ -4,6 +4,7 @@ import eu.dissco.webflux.demo.service.webclients.WebClientInterface;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -12,9 +13,11 @@ import org.springframework.stereotype.Component;
 public class ProjectRunner implements CommandLineRunner {
 
   private final WebClientInterface webService;
+  private final ConfigurableApplicationContext context;
 
   @Override
   public void run(String... args) {
     webService.retrieveData();
+    context.close();
   }
 }
