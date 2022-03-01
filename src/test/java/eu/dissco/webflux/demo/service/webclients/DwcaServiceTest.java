@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.DwcaProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
@@ -33,6 +34,8 @@ import org.springframework.web.reactive.function.client.WebClient.ResponseSpec;
 @ExtendWith(MockitoExtension.class)
 class DwcaServiceTest {
 
+  private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
+
   @Mock
   private WebClient webClient;
   @Mock
@@ -52,7 +55,7 @@ class DwcaServiceTest {
 
   @BeforeEach
   void setup() {
-    this.service = new DwcaService(webClient, properties, dwcaProperties, kafkaService);
+    this.service = new DwcaService(mapper, webClient, properties, dwcaProperties, kafkaService);
   }
 
   @Test
