@@ -27,6 +27,7 @@ import org.gbif.dwc.terms.DcTerm;
 import org.gbif.dwc.terms.DwcTerm;
 import org.gbif.dwc.terms.GbifTerm;
 import org.gbif.dwc.terms.Term;
+import org.gbif.dwc.terms.UnknownTerm;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
@@ -97,7 +98,9 @@ public class DwcaService implements WebClientInterface {
     var unmapped = (ObjectNode) existingRecord.getUnmapped();
     var extensionUnmapped = mapper.createObjectNode();
     for (var term : rec.terms()) {
-      if (extension.getRowType().equals(GbifTerm.Multimedia) && term.equals(
+      if ((extension.getRowType().equals(GbifTerm.Multimedia) || extension.getRowType().equals(
+          UnknownTerm.build("http://rs.tdwg.org/ac/terms/Multimedia", "Multimedia", true)))
+          && term.equals(
           DcTerm.identifier)) {
         setImages(rec, existingRecord);
       } else {
@@ -107,7 +110,26 @@ public class DwcaService implements WebClientInterface {
         }
       }
     }
-    unmapped.set(extension.getRowType().simpleName(), extensionUnmapped);
+    addUnmappedData(extension.getRowType().simpleName(), unmapped, extensionUnmapped);
+  }
+
+
+  private void addUnmappedData(String extensionName, ObjectNode unmapped,
+      ObjectNode extensionUnmapped) {
+    if (unmapped.get(extensionName) == null) {
+      unmapped.set(extensionName, extensionUnmapped);
+    } else {
+      setUnmappedWithPrefix(extensionName, unmapped, extensionUnmapped, 1);
+    }
+  }
+
+  private void setUnmappedWithPrefix(String extensionName, ObjectNode unmapped, ObjectNode extensionUnmapped, int i) {
+    if (unmapped.get(extensionName + "_" + i) == null) {
+      unmapped.set(extensionName + "_" + i, extensionUnmapped);
+    } else {
+      i = i + 1;
+      setUnmappedWithPrefix(extensionName, unmapped, extensionUnmapped, i);
+    }
   }
 
   private void setImages(Record rec, OpenDSWrapper existingRecord) {
@@ -133,7 +155,7 @@ public class DwcaService implements WebClientInterface {
     return OpenDSWrapper.builder()
         .authoritative(Authoritative.builder()
             .midslevel(1)
-            .name(rec.value(DwcTerm.scientificName))
+            .name(determineFullName(rec))
             .materialType(rec.value(DwcTerm.basisOfRecord))
             .physicalSpecimenId(rec.value(DwcTerm.catalogNumber))
             .curatedObjectID(rec.value(DwcTerm.occurrenceID))
@@ -143,6 +165,14 @@ public class DwcaService implements WebClientInterface {
         .sourceId("translator-service")
         .unmapped(unmapped)
         .build();
+  }
+
+  private String determineFullName(Record rec) {
+    if (rec.value(DwcTerm.scientificName) != null) {
+      return rec.value(DwcTerm.scientificName);
+    } else {
+      return rec.value(DwcTerm.acceptedNameUsage);
+    }
   }
 
   private void addUnmappedTerms(Archive archive, Record rec, ObjectNode unmapped) {
