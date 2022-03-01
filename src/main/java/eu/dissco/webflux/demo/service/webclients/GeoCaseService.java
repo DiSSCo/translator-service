@@ -1,6 +1,7 @@
 package eu.dissco.webflux.demo.service.webclients;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.webflux.demo.Profiles;
 import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.Image;
@@ -22,6 +23,16 @@ import org.springframework.web.reactive.function.client.WebClient;
 @AllArgsConstructor
 @Profile(Profiles.GEO_CASE)
 public class GeoCaseService implements WebClientInterface {
+
+  private static final String UNIT_ID = "unitid";
+  private static final String FULL_SCIENTIFIC_NAME = "fullscientificname";
+  private static final String RECORD_BASIS = "recordbasis";
+  private static final String RECORD_URI = "recordURI";
+  private static final String DATA_SET_OWNER = "datasetowner";
+  private static final String IMAGES = "images";
+
+  private static final List<String> MAPPED_TERMS = List.of(UNIT_ID, FULL_SCIENTIFIC_NAME,
+      RECORD_BASIS, RECORD_URI, DATA_SET_OWNER, IMAGES);
 
   private static final String RESPONSE = "response";
 
@@ -66,22 +77,23 @@ public class GeoCaseService implements WebClientInterface {
     var total = response.get(RESPONSE).get("numFound").asInt();
     var items = response.get(RESPONSE).get("docs");
     items.forEach(item -> {
+      var unmapped = (ObjectNode) item.deepCopy();
+      unmapped.remove(MAPPED_TERMS);
       var object = OpenDSWrapper.builder()
           .authoritative(
               Authoritative.builder()
-                  .physicalSpecimenId(item.get("unitid").asText())
-                  .name(item.has("fullscientificname") ? item.get("fullscientificname").asText()
+                  .physicalSpecimenId(item.get(UNIT_ID).asText())
+                  .name(item.has(FULL_SCIENTIFIC_NAME) ? item.get(FULL_SCIENTIFIC_NAME).asText()
                       : null)
                   .midslevel(1)
-                  .materialType(item.has("recordbasis") ? item.get("recordbasis").asText() : null)
-                  .curatedObjectID(item.has("recordURI") ? item.get("recordURI").asText() : null)
-//                  .institution(rorService.getRoRId(
-//                      item.has("datasetowner") ? item.get("datasetowner").asText() : null))
+                  .materialType(item.has(RECORD_BASIS) ? item.get(RECORD_BASIS).asText() : null)
+                  .curatedObjectID(item.has(RECORD_URI) ? item.get(RECORD_URI).asText() : null)
                   .institutionCode(
-                      item.has("datasetowner") ? item.get("datasetowner").asText() : null)
+                      item.has(DATA_SET_OWNER) ? item.get(DATA_SET_OWNER).asText() : null)
                   .build())
-          .images(item.has("images") ? getImages(item.get("images")) : null)
+          .images(item.has(IMAGES) ? getImages(item.get(IMAGES)) : null)
           .sourceId("translator-service")
+          .unmapped(unmapped)
           .build();
       result.add(object);
     });

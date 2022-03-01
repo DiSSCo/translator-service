@@ -88,7 +88,8 @@ class GeoCaseServiceTest {
         List.of(Image.builder().imageUri(
                 "https://files.geocollections.info/medium/4d/59/4d59cfd2-1c22-408c-88e1-111b1364470d.jpg")
             .build())
-    ).sourceId("translator-service").build();
+    ).sourceId("translator-service")
+        .unmapped(mapper.createObjectNode()).build();
   }
 
   private void givenJsonWebclient() {

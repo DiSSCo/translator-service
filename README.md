@@ -67,7 +67,7 @@ spring.profiles.active=geoCase
 kafka.host=localhost:9092
 kafka.topic=topic
 webclient.endpoint=https://api.geocase.eu/v1/solr
-webclient.query-params=?q=*&fl=unitid,fullscientificname,recordbasis,datasetowner,recordURI,images&rows=100
+webclient.query-params=?q=*
 ```
 ####Naturalis
 ```
