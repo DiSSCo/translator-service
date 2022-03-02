@@ -3,17 +3,17 @@
 ## Description
 The DiSSCo Translator Service is an application aimed at collecting and translating data and pushing it into the queue.
 The collection currently supports three different methods:
-###Naturalis Streaming API
+### Naturalis Streaming API
 Able to use the bioPortal streaming API from Naturalis `https://api.biodiversitydata.nl/v2/specimen/download` and download all specimen data.
 This will be done completely streaming.
 
-###GeoCase Json API
+### GeoCase Json API
 Able to request the GeoCase API. This will be done in request batches of X size (defined by `webclient.items-per-request`). Through pagination, it will walk through the complete GeoCase api and collect all specimen. It will publish each batch before retrieving the next.
 
-###BioCase XML API
+### BioCase XML API
 Able to request BioCase API's. This will be done in request batches of X size (defined by `webclient.items-per-request`). Through pagination, it will walk through the complete API and collect all the specimen. It will publish each batch before retrieving the next. 
 
-###DWCA API
+### DWCA API
 This will download the complete DWCA zip-file to local storage and unpack it before processing the complete file. It uses the GBIF library for row parsing. All records will be published when the complete file has been processed.
 
 The application collects data from one of these data sources and translates it to an Open Digital Specimen (OpenDS) object.
