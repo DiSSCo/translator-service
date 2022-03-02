@@ -1,17 +1,19 @@
 package eu.dissco.webflux.demo.service.webclients;
 
+import static eu.dissco.webflux.demo.util.TestUtil.loadResourceFile;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
-import eu.dissco.webflux.demo.util.TestUtil;
 import freemarker.cache.FileTemplateLoader;
 import freemarker.template.Configuration;
 import java.io.IOException;
@@ -19,6 +21,8 @@ import javax.xml.stream.XMLInputFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
@@ -32,6 +36,7 @@ import reactor.core.publisher.Mono;
 class BioCaseServiceTest {
 
   private final XMLInputFactory factory = XMLInputFactory.newFactory();
+  private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
   @Mock
   private WebClient webClient;
   @Mock
@@ -46,7 +51,8 @@ class BioCaseServiceTest {
   private RorService rorService;
   @Mock
   private KafkaService kafkaService;
-
+  @Captor
+  private ArgumentCaptor<OpenDSWrapper> actualOpenDS;
   private BioCaseService service;
 
   @BeforeEach
@@ -54,20 +60,37 @@ class BioCaseServiceTest {
     var configuration = new Configuration(Configuration.VERSION_2_3_31);
     configuration.setTemplateLoader(
         new FileTemplateLoader(new ClassPathResource("templates").getFile()));
-    service = new BioCaseService(webClient, properties, factory, configuration, rorService,
-        kafkaService);
+    service = new BioCaseService(mapper, webClient, properties, factory, configuration,
+        kafkaService, rorService);
   }
 
   @Test
-  void testRetrieveData() throws IOException {
+  void testRetrieveData206() throws IOException {
     // Given
     givenJsonWebclient();
     given(responseSpec.bodyToMono(any(Class.class))).willReturn(
-        Mono.just(TestUtil.loadResourceFile("biocase/biocase-response.xml")));
+        Mono.just(loadResourceFile("biocase/biocase-206-response.xml")));
     given(properties.getItemsPerRequest()).willReturn(10);
-    given(properties.getContentNamespace()).willReturn("test");
+    given(properties.getContentNamespace()).willReturn("http://www.tdwg.org/schemas/abcd/2.06");
+
+    // When
+    service.retrieveData();
+
+    // Then
+    then(rorService).shouldHaveNoInteractions();
+    then(kafkaService).shouldHaveNoInteractions();
+  }
+
+  @Test
+  void testRetrieveData21() throws IOException {
+    // Given
+    givenJsonWebclient();
+    given(responseSpec.bodyToMono(any(Class.class))).willReturn(
+        Mono.just(loadResourceFile("biocase/biocase-21-response.xml")));
+    given(properties.getItemsPerRequest()).willReturn(10);
+    given(properties.getContentNamespace()).willReturn("http://www.tdwg.org/schemas/abcd/2.1");
     given(rorService.getRoRId(anyString())).willReturn("https://ror.org/053avzc18");
-    var expected = givenExpected();
+    var expected = givenExpected21();
 
     // When
     service.retrieveData();
@@ -75,10 +98,15 @@ class BioCaseServiceTest {
     // Then
     then(rorService).should()
         .getRoRId(eq("Institute of Vertebrate Biology, The Czech Academy of Sciences (IVB CAS)"));
-    then(kafkaService).should().sendMessage(eq(expected));
+    then(kafkaService).should().sendMessage(actualOpenDS.capture());
+    var actual = actualOpenDS.getValue();
+    assertThat(actual.getAuthoritative()).isEqualTo(expected.getAuthoritative());
+    assertThat(actual.getImages()).isEqualTo(expected.getImages());
+    assertThat(actual.getSourceId()).isEqualTo(expected.getSourceId());
+    assertThat(actual.getUnmapped()).hasToString(expected.getUnmapped().toString());
   }
 
-  private OpenDSWrapper givenExpected() {
+  private OpenDSWrapper givenExpected21() throws IOException {
     return OpenDSWrapper.builder().authoritative(
             Authoritative.builder()
                 .physicalSpecimenId("NMPC-DIP-0001")
@@ -89,7 +117,9 @@ class BioCaseServiceTest {
                     "Institute of Vertebrate Biology, The Czech Academy of Sciences (IVB CAS)")
                 .midslevel(1)
                 .build()
-        ).sourceId("translator-service")
+        )
+        .unmapped(mapper.readTree(loadResourceFile("biocase/unmapped-biocase-21-response.json")))
+        .sourceId("translator-service")
         .build();
   }
 

@@ -58,7 +58,9 @@ public class DwcaService implements WebClientInterface {
       DataBufferUtils.write(buffer, Files.newOutputStream(file)).map(DataBufferUtils::release)
           .then().toFuture().get();
       var openDsRecords = mapToOpenDS(file);
-      openDsRecords.values().forEach(kafkaService::sendMessage);
+      openDsRecords.values().stream()
+          .filter(openDS -> openDS.getAuthoritative().getMaterialType().equals("PreservedSpecimen"))
+          .forEach(kafkaService::sendMessage);
     } catch (IOException e) {
       log.error("Failed to open output stream for download file", e);
     } catch (ExecutionException e) {
@@ -100,8 +102,7 @@ public class DwcaService implements WebClientInterface {
     for (var term : rec.terms()) {
       if ((extension.getRowType().equals(GbifTerm.Multimedia) || extension.getRowType().equals(
           UnknownTerm.build("http://rs.tdwg.org/ac/terms/Multimedia", "Multimedia", true)))
-          && term.equals(
-          DcTerm.identifier)) {
+          && term.equals(DcTerm.identifier)) {
         setImages(rec, existingRecord);
       } else {
         var value = rec.value(term);
@@ -123,7 +124,8 @@ public class DwcaService implements WebClientInterface {
     }
   }
 
-  private void setUnmappedWithPrefix(String extensionName, ObjectNode unmapped, ObjectNode extensionUnmapped, int i) {
+  private void setUnmappedWithPrefix(String extensionName, ObjectNode unmapped,
+      ObjectNode extensionUnmapped, int i) {
     if (unmapped.get(extensionName + "_" + i) == null) {
       unmapped.set(extensionName + "_" + i, extensionUnmapped);
     } else {

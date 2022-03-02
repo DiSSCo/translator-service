@@ -48,7 +48,7 @@ public class GeoCaseService implements WebClientInterface {
     while (!finished) {
       var result = new ArrayList<OpenDSWrapper>();
       log.info("Currently at: {} still collecting...", start);
-      int total = 0;
+      int total;
       try {
         total = webClient.get()
             .uri(uri + "&start=" + start + "&rows=" + properties.getItemsPerRequest())
@@ -57,6 +57,7 @@ public class GeoCaseService implements WebClientInterface {
       } catch (InterruptedException | ExecutionException e) {
         log.error("Failed to get response from uri", e);
         Thread.currentThread().interrupt();
+        return;
       }
       if (start + properties.getItemsPerRequest() >= total) {
         finished = true;
