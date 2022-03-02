@@ -1,0 +1,51 @@
+{
+  "sourceInstitutionID" : "FR",
+  "sourceID" : "sgn_africanplants",
+  "identifications" : {
+    "identification" : [ {
+      "result" : {
+        "taxonIdentified" : {
+          "higherTaxa" : {
+            "higherTaxon" : [ {
+              "higherTaxonName" : "Malvaceae",
+              "higherTaxonRank" : "FAMILIA"
+            } ]
+          },
+          "scientificName" : {
+            "fullScientificNameString" : "Abelmoschus esculentus (L.) Moench"
+          }
+        }
+      }
+    } ]
+  },
+  "kindOfUnit" : [ ],
+  "multiMediaObjects" : {
+    "multiMediaObject" : [ {
+      "fileURI" : "http://www.westafricanplants.senckenberg.de/images/pictures/Abelmoschus_esculentus_MS_0905_1_39c1fe.jpg",
+      "format" : "jpg",
+      "ipr" : {
+        "licenses" : {
+          "license" : [ {
+            "text" : "All rights reserved",
+            "details" : "for terms and conditions see http://www.africanplants.senckenberg.de/root/index.php?page_id=84",
+            "uri" : "http://www.africanplants.senckenberg.de/root/index.php?page_id=84",
+            "language" : "EN"
+          } ]
+        }
+      },
+      "createdDate" : 978476400000,
+      "creator" : "Marco Schmidt"
+    } ]
+  },
+  "gathering" : {
+    "dateTime" : {
+      "dateText" : "03.01.2001",
+      "isodateTimeBegin" : "2001-01-03T00:00:00"
+    },
+    "country" : {
+      "name" : {
+        "value" : "Burkina Faso"
+      }
+    }
+  }
+}

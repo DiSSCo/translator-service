@@ -1,0 +1,108 @@
+{
+  "sourceInstitutionID": "NMCP",
+  "sourceID": "tissue bank",
+  "identifications": {
+    "identification": [
+      {
+        "result": {
+          "taxonIdentified": {
+            "higherTaxa": {
+              "higherTaxon": [
+                {
+                  "higherTaxonName": "Diptera",
+                  "higherTaxonRank": "ORDO"
+                },
+                {
+                  "higherTaxonName": "Insecta",
+                  "higherTaxonRank": "CLASSIS"
+                },
+                {
+                  "higherTaxonName": "Anthomyzidae",
+                  "higherTaxonRank": "FAMILIA"
+                }
+              ]
+            },
+            "scientificName": {
+              "fullScientificNameString": "Anthomyza gracilis"
+            }
+          }
+        },
+        "preferredFlag": true,
+        "identifiers": {
+          "identifier": [],
+          "identifiersText": "det."
+        },
+        "date": {
+          "dateText": "Michal Tkoc"
+        }
+      }
+    ]
+  },
+  "kindOfUnit": {
+    "value": "specimen"
+  },
+  "specimenUnit": {
+    "preparations": {
+      "preparation": [
+        {
+          "preparationType": {
+            "value": "complete organism"
+          }
+        }
+      ]
+    }
+  },
+  "gathering": {
+    "dateTime": {
+      "isodateTimeBegin": "2015-05-09T00:00:00"
+    },
+    "agents": {
+      "gatheringAgent": [
+        {
+          "person": {
+            "fullName": "Michal Tkoc"
+          }
+        }
+      ]
+    },
+    "localityText": {
+      "value": "Únetice, Údolí Únetického potoka NR"
+    },
+    "country": {
+      "name": {
+        "value": "Czech Republic"
+      },
+      "iso3166Code": "CZ"
+    },
+    "namedAreas": {
+      "namedArea": [
+        {
+          "areaClass": {
+            "value": "Continent"
+          },
+          "areaName": {
+            "value": "Europe"
+          }
+        }
+      ]
+    },
+    "siteCoordinateSets": {
+      "siteCoordinates": [
+        {
+          "coordinatesLatLong": {
+            "longitudeDecimal": 14.3657222,
+            "latitudeDecimal": 50.1472222
+          }
+        }
+      ]
+    },
+    "altitude": {
+      "measurementOrFactAtomised": {
+        "lowerValue": {
+          "value": "225"
+        },
+        "unitOfMeasurement": "m"
+      }
+    }
+  }
+}

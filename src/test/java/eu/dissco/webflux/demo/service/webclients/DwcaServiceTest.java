@@ -59,7 +59,7 @@ class DwcaServiceTest {
   }
 
   @Test
-  @Disabled
+  @Disabled("Can only be run local due to filesystem permissions")
   void testRetrieveData() throws IOException {
     // Given
     given(properties.getEndpoint()).willReturn("https://endpoint");
