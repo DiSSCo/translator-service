@@ -43,6 +43,8 @@ public class DwcaService implements WebClientInterface {
   private static final List<Term> MAPPED_TERMS = List.of(DwcTerm.scientificName,
       DwcTerm.basisOfRecord, DwcTerm.catalogNumber, DwcTerm.occurrenceID, DwcTerm.institutionCode,
       DwcTerm.institutionID);
+  private static final List<String> MATERIAL_TYPES_ACCEPTED = List.of("PreservedSpecimen",
+      "Preservedspecimen", "preservedspecimen");
   private final ObjectMapper mapper;
   private final WebClient webClient;
   private final WebClientProperties properties;
@@ -59,7 +61,7 @@ public class DwcaService implements WebClientInterface {
           .then().toFuture().get();
       var openDsRecords = mapToOpenDS(file);
       openDsRecords.values().stream()
-          .filter(openDS -> openDS.getAuthoritative().getMaterialType().equals("PreservedSpecimen"))
+          .filter(this::checkMaterialType)
           .forEach(kafkaService::sendMessage);
     } catch (IOException e) {
       log.error("Failed to open output stream for download file", e);
@@ -69,6 +71,16 @@ public class DwcaService implements WebClientInterface {
       log.error("Failed during downloading file due to interruption", e);
       Thread.currentThread().interrupt();
     }
+  }
+
+  private boolean checkMaterialType(OpenDSWrapper openDS) {
+    var materialType = openDS.getAuthoritative().getMaterialType();
+    for (var type : MATERIAL_TYPES_ACCEPTED) {
+      if(type.equals(materialType)){
+        return true;
+      }
+    }
+    return false;
   }
 
   private Map<String, OpenDSWrapper> mapToOpenDS(Path file) {
