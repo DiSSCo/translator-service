@@ -97,6 +97,11 @@ public class DwcaService implements WebClientInterface {
   private void extractedRecord(Map<String, OpenDSWrapper> openDsRecords, ArchiveFile extension,
       Record rec) {
     var existingRecord = openDsRecords.get(rec.id());
+    if (existingRecord == null) {
+      log.warn("No occurrence record for id: {} to extension: {} data to", rec.id(),
+          extension.getRowType());
+      return;
+    }
     var unmapped = (ObjectNode) existingRecord.getUnmapped();
     var extensionUnmapped = mapper.createObjectNode();
     for (var term : rec.terms()) {
