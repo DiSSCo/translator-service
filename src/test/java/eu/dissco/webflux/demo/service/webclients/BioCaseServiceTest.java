@@ -11,6 +11,7 @@ import static org.mockito.BDDMockito.then;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
+import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
@@ -42,6 +43,8 @@ class BioCaseServiceTest {
   @Mock
   private WebClientProperties properties;
   @Mock
+  private OpenDSProperties openDSProperties;
+  @Mock
   private RequestHeadersUriSpec headersSpec;
   @Mock
   private RequestHeadersSpec uriSpec;
@@ -60,7 +63,7 @@ class BioCaseServiceTest {
     var configuration = new Configuration(Configuration.VERSION_2_3_31);
     configuration.setTemplateLoader(
         new FileTemplateLoader(new ClassPathResource("templates").getFile()));
-    service = new BioCaseService(mapper, webClient, properties, factory, configuration,
+    service = new BioCaseService(mapper, webClient, properties, openDSProperties, factory, configuration,
         kafkaService, rorService);
   }
 
@@ -88,6 +91,7 @@ class BioCaseServiceTest {
     given(responseSpec.bodyToMono(any(Class.class))).willReturn(
         Mono.just(loadResourceFile("biocase/biocase-21-response.xml")));
     given(properties.getItemsPerRequest()).willReturn(10);
+    given(openDSProperties.getServiceName()).willReturn("biocase-sng-service");
     given(properties.getContentNamespace()).willReturn("http://www.tdwg.org/schemas/abcd/2.1");
     given(rorService.getRoRId(anyString())).willReturn("https://ror.org/053avzc18");
     var expected = givenExpected21();
@@ -119,7 +123,7 @@ class BioCaseServiceTest {
                 .build()
         )
         .unmapped(mapper.readTree(loadResourceFile("biocase/unmapped-biocase-21-response.json")))
-        .sourceId("translator-service")
+        .sourceId("biocase-sng-service")
         .build();
   }
 

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
+import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
@@ -44,6 +45,8 @@ class GeoCaseServiceTest {
   @Mock
   private WebClientProperties properties;
   @Mock
+  private OpenDSProperties openDSProperties;
+  @Mock
   private RorService rorService;
   @Mock
   private KafkaService kafkaService;
@@ -52,7 +55,7 @@ class GeoCaseServiceTest {
 
   @BeforeEach
   void setup() {
-    service = new GeoCaseService(client, properties, rorService, kafkaService);
+    service = new GeoCaseService(client, properties, openDSProperties, rorService, kafkaService);
   }
 
   @Test
@@ -61,6 +64,7 @@ class GeoCaseServiceTest {
     givenJsonWebclient();
     var flux = Mono.just(mapper.readTree(loadResourceFile("geocase/geocase-response.json")));
     given(responseSpec.bodyToMono(any(Class.class))).willReturn(flux);
+    given(openDSProperties.getServiceName()).willReturn("geocase-api-service");
     given(properties.getItemsPerRequest()).willReturn(1);
     given(rorService.getRoRId(anyString())).willReturn("Unknown");
     var expected = givenExpected();
@@ -88,7 +92,7 @@ class GeoCaseServiceTest {
         List.of(Image.builder().imageUri(
                 "https://files.geocollections.info/medium/4d/59/4d59cfd2-1c22-408c-88e1-111b1364470d.jpg")
             .build())
-    ).sourceId("translator-service")
+    ).sourceId("geocase-api-service")
         .unmapped(mapper.createObjectNode()).build();
   }
 

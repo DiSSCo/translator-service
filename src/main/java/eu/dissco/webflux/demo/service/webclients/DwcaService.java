@@ -7,6 +7,7 @@ import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.DwcaProperties;
+import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
 import eu.dissco.webflux.demo.service.KafkaService;
 import java.io.IOException;
@@ -48,6 +49,7 @@ public class DwcaService implements WebClientInterface {
   private final ObjectMapper mapper;
   private final WebClient webClient;
   private final WebClientProperties properties;
+  private final OpenDSProperties openDSProperties;
   private final DwcaProperties dwcaProperties;
   private final KafkaService kafkaService;
 
@@ -76,7 +78,7 @@ public class DwcaService implements WebClientInterface {
   private boolean checkMaterialType(OpenDSWrapper openDS) {
     var materialType = openDS.getAuthoritative().getMaterialType();
     for (var type : MATERIAL_TYPES_ACCEPTED) {
-      if(type.equals(materialType)){
+      if (type.equals(materialType)) {
         return true;
       }
     }
@@ -178,10 +180,12 @@ public class DwcaService implements WebClientInterface {
             .materialType(rec.value(DwcTerm.basisOfRecord))
             .physicalSpecimenId(rec.value(DwcTerm.catalogNumber))
             .curatedObjectID(rec.value(DwcTerm.occurrenceID))
-            .institutionCode(rec.value(DwcTerm.institutionCode))
+            .institutionCode(
+                openDSProperties.getOrganisationId() != null ?
+                    openDSProperties.getOrganisationId() : rec.value(DwcTerm.institutionCode))
             .institution(rec.value(DwcTerm.institutionID))
             .build())
-        .sourceId("translator-service")
+        .sourceId(openDSProperties.getServiceName())
         .unmapped(unmapped)
         .build();
   }

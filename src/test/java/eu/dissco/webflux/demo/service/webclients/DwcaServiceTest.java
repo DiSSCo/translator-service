@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.DwcaProperties;
+import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
 import eu.dissco.webflux.demo.service.KafkaService;
 import java.io.File;
@@ -47,6 +48,8 @@ class DwcaServiceTest {
   @Mock
   private WebClientProperties properties;
   @Mock
+  private OpenDSProperties openDSProperties;
+  @Mock
   private DwcaProperties dwcaProperties;
   @Mock
   private KafkaService kafkaService;
@@ -55,7 +58,8 @@ class DwcaServiceTest {
 
   @BeforeEach
   void setup() {
-    this.service = new DwcaService(mapper, webClient, properties, dwcaProperties, kafkaService);
+    this.service = new DwcaService(mapper, webClient, properties, openDSProperties, dwcaProperties,
+        kafkaService);
   }
 
   @Test

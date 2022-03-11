@@ -6,6 +6,7 @@ import eu.dissco.webflux.demo.Profiles;
 import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
+import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
@@ -38,6 +39,7 @@ public class GeoCaseService implements WebClientInterface {
 
   private final WebClient webClient;
   private final WebClientProperties properties;
+  private final OpenDSProperties openDSProperties;
   private final RorService rorService;
   private final KafkaService kafkaService;
 
@@ -69,8 +71,14 @@ public class GeoCaseService implements WebClientInterface {
   }
 
   private OpenDSWrapper addRoR(OpenDSWrapper openDSWrapper) {
-    openDSWrapper.getAuthoritative()
-        .setInstitution(rorService.getRoRId(openDSWrapper.getAuthoritative().getInstitutionCode()));
+    if (openDSProperties.getOrganisationId() != null) {
+      openDSWrapper.getAuthoritative()
+          .setInstitution(openDSProperties.getOrganisationId());
+    } else {
+      openDSWrapper.getAuthoritative()
+          .setInstitution(
+              rorService.getRoRId(openDSWrapper.getAuthoritative().getInstitutionCode()));
+    }
     return openDSWrapper;
   }
 
@@ -93,7 +101,7 @@ public class GeoCaseService implements WebClientInterface {
                       item.has(DATA_SET_OWNER) ? item.get(DATA_SET_OWNER).asText() : null)
                   .build())
           .images(item.has(IMAGES) ? getImages(item.get(IMAGES)) : null)
-          .sourceId("translator-service")
+          .sourceId(openDSProperties.getServiceName())
           .unmapped(unmapped)
           .build();
       result.add(object);
