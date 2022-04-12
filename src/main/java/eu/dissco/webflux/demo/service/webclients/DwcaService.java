@@ -9,6 +9,7 @@ import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.DwcaProperties;
 import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
+import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +54,7 @@ public class DwcaService implements WebClientInterface {
   private final OpenDSProperties openDSProperties;
   private final DwcaProperties dwcaProperties;
   private final KafkaService kafkaService;
+  private final CloudEventService cloudEventService;
 
   @Override
   public void retrieveData() {
@@ -64,6 +67,8 @@ public class DwcaService implements WebClientInterface {
       var openDsRecords = mapToOpenDS(file);
       openDsRecords.values().stream()
           .filter(this::checkMaterialType)
+          .map(cloudEventService::createCloudEvent)
+          .filter(Objects::nonNull)
           .forEach(kafkaService::sendMessage);
     } catch (IOException e) {
       log.error("Failed to open output stream for download file", e);

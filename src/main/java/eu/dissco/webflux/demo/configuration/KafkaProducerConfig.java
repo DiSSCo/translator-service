@@ -1,6 +1,8 @@
 package eu.dissco.webflux.demo.configuration;
 
 import eu.dissco.webflux.demo.properties.KafkaProperties;
+import io.cloudevents.CloudEvent;
+import io.cloudevents.kafka.CloudEventSerializer;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -19,7 +21,7 @@ public class KafkaProducerConfig {
   private final KafkaProperties properties;
 
   @Bean
-  public ProducerFactory<String, String> producerFactory() {
+  public ProducerFactory<String, CloudEvent> producerFactory() {
     Map<String, Object> configProps = new HashMap<>();
     configProps.put(
         ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
@@ -29,12 +31,12 @@ public class KafkaProducerConfig {
         StringSerializer.class);
     configProps.put(
         ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-        StringSerializer.class);
+        CloudEventSerializer.class);
     return new DefaultKafkaProducerFactory<>(configProps);
   }
 
   @Bean
-  public KafkaTemplate<String, String> kafkaTemplate() {
+  public KafkaTemplate<String, CloudEvent> kafkaTemplate() {
     return new KafkaTemplate<>(producerFactory());
   }
 }

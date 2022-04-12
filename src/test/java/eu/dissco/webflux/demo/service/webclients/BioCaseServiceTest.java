@@ -1,7 +1,7 @@
 package eu.dissco.webflux.demo.service.webclients;
 
 import static eu.dissco.webflux.demo.util.TestUtil.loadResourceFile;
-import static org.assertj.core.api.Assertions.assertThat;
+import static eu.dissco.webflux.demo.util.TestUtil.testCloudEvent;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -13,6 +13,7 @@ import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
+import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
 import freemarker.cache.FileTemplateLoader;
@@ -22,8 +23,6 @@ import javax.xml.stream.XMLInputFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
@@ -54,8 +53,8 @@ class BioCaseServiceTest {
   private RorService rorService;
   @Mock
   private KafkaService kafkaService;
-  @Captor
-  private ArgumentCaptor<OpenDSWrapper> actualOpenDS;
+  @Mock
+  private CloudEventService cloudEventService;
   private BioCaseService service;
 
   @BeforeEach
@@ -63,8 +62,9 @@ class BioCaseServiceTest {
     var configuration = new Configuration(Configuration.VERSION_2_3_31);
     configuration.setTemplateLoader(
         new FileTemplateLoader(new ClassPathResource("templates").getFile()));
-    service = new BioCaseService(mapper, webClient, properties, openDSProperties, factory, configuration,
-        kafkaService, rorService);
+    service = new BioCaseService(mapper, webClient, properties, openDSProperties, factory,
+        configuration,
+        kafkaService, rorService, cloudEventService);
   }
 
   @Test
@@ -94,7 +94,9 @@ class BioCaseServiceTest {
     given(openDSProperties.getServiceName()).willReturn("biocase-sng-service");
     given(properties.getContentNamespace()).willReturn("http://www.tdwg.org/schemas/abcd/2.1");
     given(rorService.getRoRId(anyString())).willReturn("https://ror.org/053avzc18");
-    var expected = givenExpected21();
+    var expectedOpenDS = givenExpected21();
+    var expectedEvent = testCloudEvent(expectedOpenDS);
+    given(cloudEventService.createCloudEvent(any(OpenDSWrapper.class))).willReturn(expectedEvent);
 
     // When
     service.retrieveData();
@@ -102,12 +104,7 @@ class BioCaseServiceTest {
     // Then
     then(rorService).should()
         .getRoRId(eq("Institute of Vertebrate Biology, The Czech Academy of Sciences (IVB CAS)"));
-    then(kafkaService).should().sendMessage(actualOpenDS.capture());
-    var actual = actualOpenDS.getValue();
-    assertThat(actual.getAuthoritative()).isEqualTo(expected.getAuthoritative());
-    assertThat(actual.getImages()).isEqualTo(expected.getImages());
-    assertThat(actual.getSourceId()).isEqualTo(expected.getSourceId());
-    assertThat(actual.getUnmapped()).hasToString(expected.getUnmapped().toString());
+    then(kafkaService).should().sendMessage(eq(expectedEvent));
   }
 
   private OpenDSWrapper givenExpected21() throws IOException {

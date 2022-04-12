@@ -1,6 +1,7 @@
 package eu.dissco.webflux.demo.service.webclients;
 
 import static eu.dissco.webflux.demo.util.TestUtil.loadResourceFile;
+import static eu.dissco.webflux.demo.util.TestUtil.testCloudEvent;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -13,8 +14,10 @@ import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
+import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
+import eu.dissco.webflux.demo.util.TestUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
@@ -50,10 +53,13 @@ class NaturalisServiceTest {
   private RorService rorService;
   @Mock
   private KafkaService kafkaService;
+  @Mock
+  private CloudEventService cloudEventService;
 
   @BeforeEach
   void setup() {
-    this.service = new NaturalisService(properties, client, rorService, kafkaService);
+    this.service = new NaturalisService(properties, client, rorService, kafkaService,
+        cloudEventService);
   }
 
   @Test
@@ -64,7 +70,8 @@ class NaturalisServiceTest {
         mapper.readTree(loadResourceFile("naturalis/naturalis-response.json")));
     given(jsonNodeFlux.toStream()).willReturn(stream);
     given(rorService.getRoRId(anyString())).willReturn("https://ror.org/0566bfb96");
-    var expected = givenExpected();
+    var expected = testCloudEvent(givenExpected());
+    given(cloudEventService.createCloudEvent(eq(givenExpected()))).willReturn(expected);
 
     // When
     service.retrieveData();
@@ -100,6 +107,8 @@ class NaturalisServiceTest {
             loadResourceFile(
                 "naturalis/naturalis-missing-scientific-name-response.json")));
     given(jsonNodeFlux.toStream()).willReturn(stream);
+    var expected = testCloudEvent(givenExpected());
+    given(cloudEventService.createCloudEvent(any(OpenDSWrapper.class))).willReturn(expected);
 
     // When
     service.retrieveData();

@@ -17,7 +17,7 @@ public class KafkaProperties {
   @NotBlank
   private String topic;
 
-  private int numberOfPartitions = 1;
+  private int numberOfPartitions = 4;
 
   private short numberOfReplications = 1;
 

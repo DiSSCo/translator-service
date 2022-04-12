@@ -8,10 +8,12 @@ import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
+import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +44,7 @@ public class GeoCaseService implements WebClientInterface {
   private final OpenDSProperties openDSProperties;
   private final RorService rorService;
   private final KafkaService kafkaService;
+  private final CloudEventService cloudEventService;
 
   public void retrieveData() {
     var uri = properties.getEndpoint() + properties.getQueryParams();
@@ -66,7 +69,10 @@ public class GeoCaseService implements WebClientInterface {
       } else {
         start = start + properties.getItemsPerRequest();
       }
-      result.stream().map(this::addRoR).forEach(kafkaService::sendMessage);
+      result.stream().map(this::addRoR)
+          .map(cloudEventService::createCloudEvent)
+          .filter(Objects::nonNull)
+          .forEach(kafkaService::sendMessage);
     }
   }
 
