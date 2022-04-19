@@ -15,4 +15,6 @@ public class OpenDSProperties {
   @NotBlank
   private String serviceName;
 
+  private String evenType = "dissco/translator-event";
+
 }

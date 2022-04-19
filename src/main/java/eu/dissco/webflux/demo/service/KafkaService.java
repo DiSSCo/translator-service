@@ -1,11 +1,11 @@
 package eu.dissco.webflux.demo.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.KafkaProperties;
+import io.cloudevents.CloudEvent;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -17,32 +17,25 @@ import org.springframework.util.concurrent.ListenableFutureCallback;
 @AllArgsConstructor
 public class KafkaService {
 
-  private final ObjectMapper mapper;
-  private final KafkaTemplate<String, String> kafkaTemplate;
+  private final KafkaTemplate<String, CloudEvent> kafkaTemplate;
   private final KafkaProperties properties;
 
-  public void sendMessage(OpenDSWrapper openDSWrapper) {
-    try {
-      var json = mapper.writeValueAsString(openDSWrapper);
-      ListenableFuture<SendResult<String, String>> future = kafkaTemplate.send(
-          properties.getTopic(), json);
-      future.addCallback(new ListenableFutureCallback<>() {
+  public void sendMessage(CloudEvent event) {
+    ListenableFuture<SendResult<String, CloudEvent>> future = kafkaTemplate.send(properties.getTopic(), event);
+    future.addCallback(new ListenableFutureCallback<>() {
 
-        @Override
-        public void onSuccess(SendResult<String, String> result) {
-          var offset = result.getRecordMetadata().offset();
-          if (offset % properties.getLogAfterLines() == 0) {
-            log.info("Currently at offset: {}", offset);
-          }
+      @Override
+      public void onSuccess(SendResult<String, CloudEvent> result) {
+        var offset = result.getRecordMetadata().offset();
+        if (offset % properties.getLogAfterLines() == 0) {
+          log.info("Currently at offset: {}", offset);
         }
+      }
 
-        @Override
-        public void onFailure(Throwable ex) {
-          log.error("Unable to send message: {}", json, ex);
-        }
-      });
-    } catch (JsonProcessingException e) {
-      log.error("Failed to pars Objects to Json: {}", openDSWrapper);
-    }
+      @Override
+      public void onFailure(Throwable ex) {
+        log.error("Unable to send message: {}", event, ex);
+      }
+    });
   }
 }

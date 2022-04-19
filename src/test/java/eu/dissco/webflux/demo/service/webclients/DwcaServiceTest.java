@@ -1,5 +1,6 @@
 package eu.dissco.webflux.demo.service.webclients;
 
+import static eu.dissco.webflux.demo.util.TestUtil.testCloudEvent;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
@@ -11,7 +12,9 @@ import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.DwcaProperties;
 import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
+import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
+import io.cloudevents.CloudEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,13 +56,15 @@ class DwcaServiceTest {
   private DwcaProperties dwcaProperties;
   @Mock
   private KafkaService kafkaService;
+  @Mock
+  private CloudEventService cloudEventService;
 
   private DwcaService service;
 
   @BeforeEach
   void setup() {
     this.service = new DwcaService(mapper, webClient, properties, openDSProperties, dwcaProperties,
-        kafkaService);
+        kafkaService, cloudEventService);
   }
 
   @Test
@@ -77,12 +82,13 @@ class DwcaServiceTest {
     given(responseSpec.bodyToFlux(DataBuffer.class)).willReturn(
         DataBufferUtils.read(new ClassPathResource("dwca/darwin.zip"),
             new DefaultDataBufferFactory(), 1000));
+    given(cloudEventService.createCloudEvent(any(OpenDSWrapper.class))).willReturn(testCloudEvent());
 
     // When
     service.retrieveData();
 
     // Then
-    then(kafkaService).should(times(57105)).sendMessage(any(OpenDSWrapper.class));
+    then(kafkaService).should(times(57105)).sendMessage(any(CloudEvent.class));
     FileSystemUtils.deleteRecursively(Path.of("src/test/resources/dwca/test/temp"));
     Files.delete(Path.of("src/test/resources/dwca/test/darwin.zip"));
   }

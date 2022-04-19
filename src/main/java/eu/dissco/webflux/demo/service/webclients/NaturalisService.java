@@ -6,10 +6,12 @@ import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
+import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -32,6 +34,7 @@ public class NaturalisService implements WebClientInterface {
   private final WebClient webClient;
   private final RorService rorService;
   private final KafkaService kafkaService;
+  private final CloudEventService cloudEventService;
 
   public void retrieveData() {
     var uriSpec = webClient.get().uri(properties.getEndpoint()).retrieve()
@@ -39,6 +42,8 @@ public class NaturalisService implements WebClientInterface {
     uriSpec.toStream()
         .filter(object -> !object.get("recordBasis").asText().equals("HumanObservation"))
         .map(this::parseJson)
+        .map(cloudEventService::createCloudEvent)
+        .filter(Objects::nonNull)
         .forEach(kafkaService::sendMessage);
   }
 

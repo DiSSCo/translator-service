@@ -13,6 +13,7 @@ import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
+import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
 import freemarker.template.Configuration;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -59,6 +61,7 @@ public class BioCaseService implements WebClientInterface {
   private final Configuration configuration;
   private final KafkaService kafkaService;
   private final RorService rorService;
+  private final CloudEventService cloudEventService;
 
 
   @Override
@@ -86,7 +89,10 @@ public class BioCaseService implements WebClientInterface {
       updateStartAtParameter(templateProperties);
       recordList.stream()
           .filter(openDS -> openDS.getAuthoritative().getMaterialType().equals("PreservedSpecimen"))
-          .map(this::addRoR).forEach(kafkaService::sendMessage);
+          .map(this::addRoR)
+          .map(cloudEventService::createCloudEvent)
+          .filter(Objects::nonNull)
+          .forEach(kafkaService::sendMessage);
     }
   }
 

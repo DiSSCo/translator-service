@@ -1,6 +1,7 @@
 package eu.dissco.webflux.demo.service.webclients;
 
 import static eu.dissco.webflux.demo.util.TestUtil.loadResourceFile;
+import static eu.dissco.webflux.demo.util.TestUtil.testCloudEvent;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,6 +15,7 @@ import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
+import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
 import java.io.IOException;
@@ -50,12 +52,15 @@ class GeoCaseServiceTest {
   private RorService rorService;
   @Mock
   private KafkaService kafkaService;
+  @Mock
+  private CloudEventService cloudEventService;
 
   private GeoCaseService service;
 
   @BeforeEach
   void setup() {
-    service = new GeoCaseService(client, properties, openDSProperties, rorService, kafkaService);
+    service = new GeoCaseService(client, properties, openDSProperties, rorService, kafkaService,
+        cloudEventService);
   }
 
   @Test
@@ -67,7 +72,9 @@ class GeoCaseServiceTest {
     given(openDSProperties.getServiceName()).willReturn("geocase-api-service");
     given(properties.getItemsPerRequest()).willReturn(1);
     given(rorService.getRoRId(anyString())).willReturn("Unknown");
-    var expected = givenExpected();
+    var expected = testCloudEvent();
+    given(cloudEventService.createCloudEvent(eq(givenExpected()))).willReturn(expected);
+
 
     // When
     service.retrieveData();
@@ -79,20 +86,20 @@ class GeoCaseServiceTest {
 
   private OpenDSWrapper givenExpected() {
     return OpenDSWrapper.builder().authoritative(
-        Authoritative.builder()
-            .midslevel(1)
-            .physicalSpecimenId("638-222")
-            .name("Algae (informal)")
-            .materialType("Fossil")
-            .curatedObjectID("https://geocollections.info/specimen/289080")
-            .institutionCode("University of Tartu, Natural History Museum")
-            .institution("Unknown")
-            .build()
-    ).images(
-        List.of(Image.builder().imageUri(
-                "https://files.geocollections.info/medium/4d/59/4d59cfd2-1c22-408c-88e1-111b1364470d.jpg")
-            .build())
-    ).sourceId("geocase-api-service")
+            Authoritative.builder()
+                .midslevel(1)
+                .physicalSpecimenId("638-222")
+                .name("Algae (informal)")
+                .materialType("Fossil")
+                .curatedObjectID("https://geocollections.info/specimen/289080")
+                .institutionCode("University of Tartu, Natural History Museum")
+                .institution("Unknown")
+                .build()
+        ).images(
+            List.of(Image.builder().imageUri(
+                    "https://files.geocollections.info/medium/4d/59/4d59cfd2-1c22-408c-88e1-111b1364470d.jpg")
+                .build())
+        ).sourceId("geocase-api-service")
         .unmapped(mapper.createObjectNode()).build();
   }
 
