@@ -1,5 +1,6 @@
 package eu.dissco.webflux.demo.service.webclients;
 
+import static eu.dissco.webflux.demo.util.TestUtil.EVENT_TYPE;
 import static eu.dissco.webflux.demo.util.TestUtil.testCloudEvent;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -10,10 +11,12 @@ import static org.mockito.Mockito.times;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.DwcaProperties;
+import eu.dissco.webflux.demo.properties.EnrichmentProperties;
 import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
-import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
+import eu.dissco.webflux.demo.service.RorService;
+import eu.dissco.webflux.demo.util.TestUtil;
 import io.cloudevents.CloudEvent;
 import java.io.File;
 import java.io.IOException;
@@ -57,14 +60,16 @@ class DwcaServiceTest {
   @Mock
   private KafkaService kafkaService;
   @Mock
-  private CloudEventService cloudEventService;
+  private EnrichmentProperties enrichmentProperties;
+  @Mock
+  private RorService rorService;
 
   private DwcaService service;
 
   @BeforeEach
   void setup() {
-    this.service = new DwcaService(mapper, webClient, properties, openDSProperties, dwcaProperties,
-        kafkaService, cloudEventService);
+    this.service = new DwcaService(mapper, openDSProperties, properties,
+        kafkaService, rorService, webClient, dwcaProperties, enrichmentProperties);
   }
 
   @Test
@@ -76,13 +81,13 @@ class DwcaServiceTest {
         .willReturn(getAbsolutePath() + "/darwin.zip");
     given(dwcaProperties.getTempFolder())
         .willReturn(getAbsolutePath() + "/temp");
+    given(openDSProperties.getEvenType()).willReturn(EVENT_TYPE);
     given(webClient.get()).willReturn(headersSpec);
     given(headersSpec.uri(anyString())).willReturn(uriSpec);
     given(uriSpec.retrieve()).willReturn(responseSpec);
     given(responseSpec.bodyToFlux(DataBuffer.class)).willReturn(
         DataBufferUtils.read(new ClassPathResource("dwca/darwin.zip"),
             new DefaultDataBufferFactory(), 1000));
-    given(cloudEventService.createCloudEvent(any(OpenDSWrapper.class))).willReturn(testCloudEvent());
 
     // When
     service.retrieveData();

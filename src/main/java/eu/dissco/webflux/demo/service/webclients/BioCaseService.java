@@ -11,9 +11,9 @@ import eu.dissco.webflux.demo.Profiles;
 import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
+import eu.dissco.webflux.demo.properties.EnrichmentProperties;
 import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
-import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
 import freemarker.template.Configuration;
@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -34,7 +33,6 @@ import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -42,31 +40,34 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Slf4j
 @Service
-@AllArgsConstructor
 @Profile(Profiles.BIO_CASE)
-public class BioCaseService implements WebClientInterface {
+public class BioCaseService extends AbstractWebClientService {
 
   private static final String START_AT = "startAt";
   private static final String LIMIT = "limit";
 
-  private final ObjectMapper mapper;
-
-  private final WebClient webClient;
-
-  private final WebClientProperties properties;
-  private final OpenDSProperties openDSProperties;
-
   private final XMLInputFactory factory;
 
   private final Configuration configuration;
-  private final KafkaService kafkaService;
-  private final RorService rorService;
-  private final CloudEventService cloudEventService;
 
+  public BioCaseService(ObjectMapper mapper,
+      OpenDSProperties openDSProperties,
+      WebClientProperties webClientProperties,
+      KafkaService kafkaService,
+      RorService rorService,
+      WebClient webClient,
+      XMLInputFactory factory,
+      Configuration configuration,
+      EnrichmentProperties enrichmentProperties) {
+    super(mapper, openDSProperties, webClientProperties, kafkaService, rorService, webClient,
+        enrichmentProperties);
+    this.factory = factory;
+    this.configuration = configuration;
+  }
 
   @Override
   public void retrieveData() {
-    var uri = properties.getEndpoint();
+    var uri = webClientProperties.getEndpoint();
     var templateProperties = getTemplateProperties();
     configuration.setNumberFormat("computer");
     var finished = false;
@@ -75,7 +76,8 @@ public class BioCaseService implements WebClientInterface {
       log.info("Currently at: {} still collecting...", templateProperties.get(START_AT));
       StringWriter writer = fillTemplate(templateProperties);
       try {
-        finished = webClient.get().uri(uri + properties.getQueryParams() + writer).retrieve()
+        finished = webClient.get().uri(uri + webClientProperties.getQueryParams() + writer)
+            .retrieve()
             .bodyToMono(String.class).map(xml -> mapToDarwin(xml, recordList)).toFuture().get();
         if (recordList.isEmpty()) {
           log.info("Unable to get records from xml");
@@ -87,25 +89,8 @@ public class BioCaseService implements WebClientInterface {
         return;
       }
       updateStartAtParameter(templateProperties);
-      recordList.stream()
-          .filter(openDS -> openDS.getAuthoritative().getMaterialType().equals("PreservedSpecimen"))
-          .map(this::addRoR)
-          .map(cloudEventService::createCloudEvent)
-          .filter(Objects::nonNull)
-          .forEach(kafkaService::sendMessage);
+      publishRecords(recordList);
     }
-  }
-
-  private OpenDSWrapper addRoR(OpenDSWrapper openDSWrapper) {
-    if (openDSProperties.getOrganisationId() != null) {
-      openDSWrapper.getAuthoritative()
-          .setInstitution(openDSProperties.getOrganisationId());
-    } else {
-      openDSWrapper.getAuthoritative()
-          .setInstitution(
-              rorService.getRoRId(openDSWrapper.getAuthoritative().getInstitutionCode()));
-    }
-    return openDSWrapper;
   }
 
   private StringWriter fillTemplate(Map<String, Object> templateProperties) {
@@ -126,8 +111,8 @@ public class BioCaseService implements WebClientInterface {
 
   private Map<String, Object> getTemplateProperties() {
     var map = new HashMap<String, Object>();
-    map.put("contentNamespace", properties.getContentNamespace());
-    map.put(LIMIT, properties.getItemsPerRequest());
+    map.put("contentNamespace", webClientProperties.getContentNamespace());
+    map.put(LIMIT, webClientProperties.getItemsPerRequest());
     map.put(START_AT, 0);
     return map;
   }
@@ -144,7 +129,7 @@ public class BioCaseService implements WebClientInterface {
         }
         retrieveUnitData(list, xmlEventReader);
       }
-      return recordCount % properties.getItemsPerRequest() != 0;
+      return recordCount % webClientProperties.getItemsPerRequest() != 0;
     } catch (XMLStreamException e) {
       log.info("Error converting response tot XML", e);
     }
@@ -155,13 +140,15 @@ public class BioCaseService implements WebClientInterface {
       throws XMLStreamException {
     mapper.setSerializationInclusion(Include.NON_NULL);
     if (isStartElement(xmlEventReader.peek(), "DataSets")) {
-      if (properties.getContentNamespace().equals("http://www.tdwg.org/schemas/abcd/2.06")) {
+      if (webClientProperties.getContentNamespace()
+          .equals("http://www.tdwg.org/schemas/abcd/2.06")) {
         try {
           mapABCD206(list, xmlEventReader);
         } catch (JAXBException e) {
           e.printStackTrace();
         }
-      } else if (properties.getContentNamespace().equals("http://www.tdwg.org/schemas/abcd/2.1")) {
+      } else if (webClientProperties.getContentNamespace()
+          .equals("http://www.tdwg.org/schemas/abcd/2.1")) {
         try {
           mapABCD21(list, xmlEventReader);
         } catch (JAXBException e) {
@@ -188,7 +175,6 @@ public class BioCaseService implements WebClientInterface {
       var images = retrieveImages206(unit);
       list.add(
           OpenDSWrapper.builder().authoritative(authoritative).images(images)
-              .sourceId("translator-service")
               .unmapped(getUnmapped(mapper.valueToTree(unit))).build());
     }
   }
@@ -239,7 +225,6 @@ public class BioCaseService implements WebClientInterface {
       var images = retrieveImages21(unit);
       list.add(
           OpenDSWrapper.builder().authoritative(authoritative).images(images)
-              .sourceId(openDSProperties.getServiceName())
               .unmapped(getUnmapped(mapper.valueToTree(unit))).build());
     }
   }

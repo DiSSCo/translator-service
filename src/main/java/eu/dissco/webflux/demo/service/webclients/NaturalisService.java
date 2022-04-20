@@ -1,48 +1,52 @@
 package eu.dissco.webflux.demo.service.webclients;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.webflux.demo.Profiles;
 import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
+import eu.dissco.webflux.demo.properties.EnrichmentProperties;
+import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
-import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Service
-@AllArgsConstructor
 @Slf4j
 @Profile(Profiles.NATURALIS)
-public class NaturalisService implements WebClientInterface {
+public class NaturalisService extends AbstractWebClientService {
 
   private static final String IDENTIFICATIONS = "identifications";
   private static final String SCIENTIFIC_NAME = "scientificName";
   private static final String FULL_SCIENTIFIC_NAME = "fullScientificName";
   private static final String ASSOCIATED_MULTI_MEDIA_URIS = "associatedMultiMediaUris";
 
-  private final WebClientProperties properties;
-
-  private final WebClient webClient;
-  private final RorService rorService;
-  private final KafkaService kafkaService;
-  private final CloudEventService cloudEventService;
+  public NaturalisService(ObjectMapper mapper,
+      OpenDSProperties openDSProperties,
+      WebClientProperties webClientProperties,
+      KafkaService kafkaService, RorService rorService,
+      WebClient webClient,
+      EnrichmentProperties enrichmentProperties) {
+    super(mapper, openDSProperties, webClientProperties, kafkaService, rorService, webClient,
+        enrichmentProperties);
+  }
 
   public void retrieveData() {
-    var uriSpec = webClient.get().uri(properties.getEndpoint()).retrieve()
+    var uriSpec = webClient.get().uri(webClientProperties.getEndpoint()).retrieve()
         .bodyToFlux(JsonNode.class);
     uriSpec.toStream()
         .filter(object -> !object.get("recordBasis").asText().equals("HumanObservation"))
         .map(this::parseJson)
-        .map(cloudEventService::createCloudEvent)
+        .map(this::addEnrichmentQueues)
+        .map(this::createCloudEvent)
         .filter(Objects::nonNull)
         .forEach(kafkaService::sendMessage);
   }
@@ -61,7 +65,7 @@ public class NaturalisService implements WebClientInterface {
                 .midslevel(1)
                 .build()
         ).images(images.isEmpty() ? null : images)
-        .sourceId("translator-service").build();
+        .build();
   }
 
   private String getScientificName(JsonNode item) {

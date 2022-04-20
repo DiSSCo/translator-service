@@ -1,7 +1,12 @@
 package eu.dissco.webflux.demo.service.webclients;
 
+import static eu.dissco.webflux.demo.util.TestUtil.ENDPOINT;
+import static eu.dissco.webflux.demo.util.TestUtil.EVENT_TYPE;
+import static eu.dissco.webflux.demo.util.TestUtil.SERVICE_NAME;
 import static eu.dissco.webflux.demo.util.TestUtil.loadResourceFile;
 import static eu.dissco.webflux.demo.util.TestUtil.testCloudEvent;
+import static eu.dissco.webflux.demo.util.TestUtil.testEnrichment;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -13,16 +18,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
+import eu.dissco.webflux.demo.domain.TranslatorEventData;
+import eu.dissco.webflux.demo.properties.EnrichmentProperties;
 import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
-import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
+import io.cloudevents.CloudEvent;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -35,7 +44,8 @@ import reactor.core.publisher.Mono;
 class GeoCaseServiceTest {
 
   private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
-
+  @Captor
+  ArgumentCaptor<CloudEvent> cloudEventCaptor;
   @Mock
   private WebClient client;
   @Mock
@@ -53,14 +63,13 @@ class GeoCaseServiceTest {
   @Mock
   private KafkaService kafkaService;
   @Mock
-  private CloudEventService cloudEventService;
-
+  private EnrichmentProperties enrichmentProperties;
   private GeoCaseService service;
 
   @BeforeEach
   void setup() {
-    service = new GeoCaseService(client, properties, openDSProperties, rorService, kafkaService,
-        cloudEventService);
+    service = new GeoCaseService(mapper, openDSProperties, properties, kafkaService, rorService,
+        client, enrichmentProperties);
   }
 
   @Test
@@ -69,23 +78,25 @@ class GeoCaseServiceTest {
     givenJsonWebclient();
     var flux = Mono.just(mapper.readTree(loadResourceFile("geocase/geocase-response.json")));
     given(responseSpec.bodyToMono(any(Class.class))).willReturn(flux);
-    given(openDSProperties.getServiceName()).willReturn("geocase-api-service");
+    given(openDSProperties.getServiceName()).willReturn(SERVICE_NAME);
+    given(openDSProperties.getEvenType()).willReturn(EVENT_TYPE);
     given(properties.getItemsPerRequest()).willReturn(1);
     given(rorService.getRoRId(anyString())).willReturn("Unknown");
-    var expected = testCloudEvent();
-    given(cloudEventService.createCloudEvent(eq(givenExpected()))).willReturn(expected);
-
+    given(enrichmentProperties.getList()).willReturn(List.of(testEnrichment()));
+    var expected = testCloudEvent(givenExpected());
 
     // When
     service.retrieveData();
 
     // Then
     then(rorService).should(times(2)).getRoRId(eq("University of Tartu, Natural History Museum"));
-    then(kafkaService).should(times(2)).sendMessage(eq(expected));
+    then(kafkaService).should(times(2)).sendMessage(cloudEventCaptor.capture());
+    assertThat(cloudEventCaptor.getAllValues().get(0)).usingRecursiveComparison()
+        .ignoringFields("id", "time").isEqualTo(expected);
   }
 
-  private OpenDSWrapper givenExpected() {
-    return OpenDSWrapper.builder().authoritative(
+  private TranslatorEventData givenExpected() {
+    return TranslatorEventData.builder().openDS(OpenDSWrapper.builder().authoritative(
             Authoritative.builder()
                 .midslevel(1)
                 .physicalSpecimenId("638-222")
@@ -99,14 +110,13 @@ class GeoCaseServiceTest {
             List.of(Image.builder().imageUri(
                     "https://files.geocollections.info/medium/4d/59/4d59cfd2-1c22-408c-88e1-111b1364470d.jpg")
                 .build())
-        ).sourceId("geocase-api-service")
-        .unmapped(mapper.createObjectNode()).build();
+        ).build())
+        .enrichment(List.of(testEnrichment()))
+        .build();
   }
 
   private void givenJsonWebclient() {
-    given(properties.getEndpoint()).willReturn(
-        "https://api.geocase.eu/v1/solr?q=%2A&fl=unitid,fullscientificname,"
-            + "recordbasis,datasetowner,recordURI,images&rows=100&start=4000");
+    given(properties.getEndpoint()).willReturn(ENDPOINT);
     given(client.get()).willReturn(headersSpec);
     given(headersSpec.uri(anyString())).willReturn(uriSpec);
     given(uriSpec.retrieve()).willReturn(responseSpec);

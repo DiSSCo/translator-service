@@ -7,10 +7,11 @@ import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
 import eu.dissco.webflux.demo.properties.DwcaProperties;
+import eu.dissco.webflux.demo.properties.EnrichmentProperties;
 import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
-import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
+import eu.dissco.webflux.demo.service.RorService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,9 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gbif.dwc.Archive;
 import org.gbif.dwc.ArchiveFile;
@@ -39,37 +38,37 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Slf4j
 @Service
-@AllArgsConstructor
 @Profile(Profiles.DWCA)
-public class DwcaService implements WebClientInterface {
+public class DwcaService extends AbstractWebClientService {
 
   private static final List<Term> MAPPED_TERMS = List.of(DwcTerm.scientificName,
       DwcTerm.basisOfRecord, DwcTerm.catalogNumber, DwcTerm.occurrenceID, DwcTerm.institutionCode,
       DwcTerm.institutionID);
-  private static final List<String> MATERIAL_TYPES_ACCEPTED = List.of("PreservedSpecimen",
-      "Preservedspecimen", "preservedspecimen");
-  private final ObjectMapper mapper;
-  private final WebClient webClient;
-  private final WebClientProperties properties;
-  private final OpenDSProperties openDSProperties;
+
   private final DwcaProperties dwcaProperties;
-  private final KafkaService kafkaService;
-  private final CloudEventService cloudEventService;
+
+  public DwcaService(ObjectMapper mapper,
+      OpenDSProperties openDSProperties,
+      WebClientProperties webClientProperties,
+      KafkaService kafkaService, RorService rorService,
+      WebClient webClient,
+      DwcaProperties dwcaProperties,
+      EnrichmentProperties enrichmentProperties) {
+    super(mapper, openDSProperties, webClientProperties, kafkaService, rorService, webClient,
+        enrichmentProperties);
+    this.dwcaProperties = dwcaProperties;
+  }
 
   @Override
   public void retrieveData() {
     try {
       var file = Path.of(dwcaProperties.getDownloadFile());
-      var buffer = webClient.get().uri(properties.getEndpoint()).retrieve().bodyToFlux(
+      var buffer = webClient.get().uri(webClientProperties.getEndpoint()).retrieve().bodyToFlux(
           DataBuffer.class);
       DataBufferUtils.write(buffer, Files.newOutputStream(file)).map(DataBufferUtils::release)
           .then().toFuture().get();
       var openDsRecords = mapToOpenDS(file);
-      openDsRecords.values().stream()
-          .filter(this::checkMaterialType)
-          .map(cloudEventService::createCloudEvent)
-          .filter(Objects::nonNull)
-          .forEach(kafkaService::sendMessage);
+      publishRecords(openDsRecords.values());
     } catch (IOException e) {
       log.error("Failed to open output stream for download file", e);
     } catch (ExecutionException e) {
@@ -80,15 +79,6 @@ public class DwcaService implements WebClientInterface {
     }
   }
 
-  private boolean checkMaterialType(OpenDSWrapper openDS) {
-    var materialType = openDS.getAuthoritative().getMaterialType();
-    for (var type : MATERIAL_TYPES_ACCEPTED) {
-      if (type.equals(materialType)) {
-        return true;
-      }
-    }
-    return false;
-  }
 
   private Map<String, OpenDSWrapper> mapToOpenDS(Path file) {
     try {
@@ -190,7 +180,6 @@ public class DwcaService implements WebClientInterface {
                     openDSProperties.getOrganisationId() : rec.value(DwcTerm.institutionCode))
             .institution(rec.value(DwcTerm.institutionID))
             .build())
-        .sourceId(openDSProperties.getServiceName())
         .unmapped(unmapped)
         .build();
   }

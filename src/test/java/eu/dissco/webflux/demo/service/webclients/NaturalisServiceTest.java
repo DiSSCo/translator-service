@@ -1,7 +1,11 @@
 package eu.dissco.webflux.demo.service.webclients;
 
+import static eu.dissco.webflux.demo.util.TestUtil.ENDPOINT;
+import static eu.dissco.webflux.demo.util.TestUtil.EVENT_TYPE;
+import static eu.dissco.webflux.demo.util.TestUtil.SERVICE_NAME;
 import static eu.dissco.webflux.demo.util.TestUtil.loadResourceFile;
 import static eu.dissco.webflux.demo.util.TestUtil.testCloudEvent;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -13,17 +17,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.webflux.demo.domain.Authoritative;
 import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
+import eu.dissco.webflux.demo.domain.TranslatorEventData;
+import eu.dissco.webflux.demo.properties.EnrichmentProperties;
+import eu.dissco.webflux.demo.properties.OpenDSProperties;
 import eu.dissco.webflux.demo.properties.WebClientProperties;
-import eu.dissco.webflux.demo.service.CloudEventService;
 import eu.dissco.webflux.demo.service.KafkaService;
 import eu.dissco.webflux.demo.service.RorService;
-import eu.dissco.webflux.demo.util.TestUtil;
+import io.cloudevents.CloudEvent;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -36,6 +44,8 @@ import reactor.core.publisher.Flux;
 class NaturalisServiceTest {
 
   private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
+  @Captor
+  ArgumentCaptor<CloudEvent> cloudEventCaptor;
   @Mock
   private WebClient client;
   @Mock
@@ -50,16 +60,18 @@ class NaturalisServiceTest {
   @Mock
   private WebClientProperties properties;
   @Mock
+  private OpenDSProperties openDSProperties;
+  @Mock
   private RorService rorService;
   @Mock
   private KafkaService kafkaService;
   @Mock
-  private CloudEventService cloudEventService;
+  private EnrichmentProperties enrichmentProperties;
 
   @BeforeEach
   void setup() {
-    this.service = new NaturalisService(properties, client, rorService, kafkaService,
-        cloudEventService);
+    this.service = new NaturalisService(mapper, openDSProperties, properties, kafkaService,
+        rorService, client, enrichmentProperties);
   }
 
   @Test
@@ -71,18 +83,21 @@ class NaturalisServiceTest {
     given(jsonNodeFlux.toStream()).willReturn(stream);
     given(rorService.getRoRId(anyString())).willReturn("https://ror.org/0566bfb96");
     var expected = testCloudEvent(givenExpected());
-    given(cloudEventService.createCloudEvent(eq(givenExpected()))).willReturn(expected);
+    given(openDSProperties.getEvenType()).willReturn(EVENT_TYPE);
+    given(openDSProperties.getServiceName()).willReturn(SERVICE_NAME);
 
     // When
     service.retrieveData();
 
     // Then
     then(rorService).should().getRoRId(eq("Naturalis Biodiversity Center"));
-    then(kafkaService).should().sendMessage(eq(expected));
+    then(kafkaService).should().sendMessage(cloudEventCaptor.capture());
+    assertThat(cloudEventCaptor.getValue()).usingRecursiveComparison().ignoringFields("id", "time")
+        .isEqualTo(expected);
   }
 
-  private OpenDSWrapper givenExpected() {
-    return OpenDSWrapper.builder().authoritative(
+  private TranslatorEventData givenExpected() {
+    return TranslatorEventData.builder().openDS(OpenDSWrapper.builder().authoritative(
             Authoritative.builder()
                 .name("Argyrolobium zanonii (Turra) P.W.Ball")
                 .physicalSpecimenId("L.3892015@BRAHMS")
@@ -94,8 +109,8 @@ class NaturalisServiceTest {
                 .build()
         ).images(List.of(
             Image.builder().imageUri("https://medialib.naturalis.nl/file/id/L.3892015/format/large")
-                .build()))
-        .sourceId("translator-service").build();
+                .build())).build())
+        .enrichment(List.of()).build();
   }
 
   @Test
@@ -107,8 +122,7 @@ class NaturalisServiceTest {
             loadResourceFile(
                 "naturalis/naturalis-missing-scientific-name-response.json")));
     given(jsonNodeFlux.toStream()).willReturn(stream);
-    var expected = testCloudEvent(givenExpected());
-    given(cloudEventService.createCloudEvent(any(OpenDSWrapper.class))).willReturn(expected);
+    given(openDSProperties.getEvenType()).willReturn(EVENT_TYPE);
 
     // When
     service.retrieveData();
@@ -118,8 +132,7 @@ class NaturalisServiceTest {
   }
 
   private void givenJsonWebclient() {
-    given(properties.getEndpoint()).willReturn(
-        "https://api.biodiversitydata.nl/v2/specimen/download");
+    given(properties.getEndpoint()).willReturn(ENDPOINT);
     given(client.get()).willReturn(headersSpec);
     given(headersSpec.uri(anyString())).willReturn(uriSpec);
     given(uriSpec.retrieve()).willReturn(responseSpec);
