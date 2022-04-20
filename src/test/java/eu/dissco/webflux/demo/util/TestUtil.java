@@ -3,8 +3,10 @@ package eu.dissco.webflux.demo.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.webflux.demo.domain.Authoritative;
+import eu.dissco.webflux.demo.domain.Enrichment;
 import eu.dissco.webflux.demo.domain.Image;
 import eu.dissco.webflux.demo.domain.OpenDSWrapper;
+import eu.dissco.webflux.demo.domain.TranslatorEventData;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
 import java.io.IOException;
@@ -13,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.core.io.ClassPathResource;
 
 public class TestUtil {
@@ -22,6 +23,7 @@ public class TestUtil {
   public static final String SERVICE_NAME = "translator-test-service";
   public static final String ENDPOINT = "https://endpoint.com";
   public static final String EVENT_TYPE = "dissco/translator-event";
+  public static final String ENRICHMENT_NAME = "test-enrichment-service";
 
   public static final String INSTITUTION_NAME = "Naturalis Biodiversity Center";
   public static final String ROR_INSTITUTION = "https://ror.org/0566bfb96";
@@ -39,15 +41,15 @@ public class TestUtil {
 
   public static OpenDSWrapper testOpenDSWrapper() {
     return OpenDSWrapper.builder().authoritative(testAuthoritative()).images(List.of(testImage()))
-        .sourceId("translator-service").build();
+        .build();
   }
 
   public static CloudEvent testCloudEvent()
       throws JsonProcessingException {
-    return testCloudEvent(testOpenDSWrapper());
+    return testCloudEvent(TranslatorEventData.builder().openDS(testOpenDSWrapper()).build());
   }
 
-  public static CloudEvent testCloudEvent(OpenDSWrapper openDSWrapper)
+  public static CloudEvent testCloudEvent(TranslatorEventData translatorEventData)
       throws JsonProcessingException {
     return CloudEventBuilder.v1()
         .withId(EVENT_ID)
@@ -56,7 +58,7 @@ public class TestUtil {
         .withTime(OffsetDateTime.now(ZoneOffset.UTC))
         .withType(EVENT_TYPE)
         .withDataContentType("application/json")
-        .withData(mapper.writeValueAsBytes(testOpenDSWrapper()))
+        .withData(mapper.writeValueAsBytes(translatorEventData))
         .build();
   }
 
@@ -76,6 +78,13 @@ public class TestUtil {
     return Image.builder()
         .imageUri(IMAGE_URI)
         .build();
+  }
+
+  public static Enrichment testEnrichment() {
+    var enrichment = new Enrichment();
+    enrichment.setName(ENRICHMENT_NAME);
+    enrichment.setImageOnly(false);
+    return enrichment;
   }
 
 }

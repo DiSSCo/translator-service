@@ -1,6 +1,7 @@
 package eu.dissco.webflux.demo.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.webflux.demo.properties.EnrichmentProperties;
 import eu.dissco.webflux.demo.properties.KafkaProperties;
 import io.cloudevents.CloudEvent;
 import lombok.AllArgsConstructor;

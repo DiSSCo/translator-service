@@ -2,7 +2,7 @@ package eu.dissco.webflux.demo;
 
 import static org.mockito.BDDMockito.then;
 
-import eu.dissco.webflux.demo.service.webclients.WebClientInterface;
+import eu.dissco.webflux.demo.service.webclients.AbstractWebClientService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,7 +14,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 class ProjectRunnerTest {
 
   @Mock
-  private WebClientInterface webService;
+  private AbstractWebClientService webService;
   @Mock
   private ConfigurableApplicationContext context;
 

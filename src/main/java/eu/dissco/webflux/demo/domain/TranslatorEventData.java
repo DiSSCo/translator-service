@@ -3,7 +3,6 @@ package eu.dissco.webflux.demo.domain;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import lombok.Builder;
 import lombok.Data;
@@ -11,13 +10,11 @@ import lombok.Data;
 @Data
 @Builder
 @JsonInclude(Include.NON_NULL)
-public class OpenDSWrapper {
+public class TranslatorEventData {
 
-  @JsonProperty("ods:authoritative")
-  private Authoritative authoritative;
-  @JsonProperty("ods:images")
-  private List<Image> images;
-  @JsonProperty("ods:unmapped")
-  private JsonNode unmapped;
+  @JsonProperty("openDS")
+  OpenDSWrapper openDS;
+  @JsonProperty("enrichment")
+  List<Enrichment> enrichment;
 
 }
